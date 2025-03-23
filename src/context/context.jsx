@@ -4,43 +4,52 @@ import run from "../config/gemini"; // Import API function
 export const Context = createContext();
 
 const ContextProvider = (props) => {
-  // State management
+  // State Management
   const [input, setInput] = useState("");
   const [recentPrompt, setRecentPrompt] = useState("");
-  const [prevPrompt, setPreviousPromps] = useState([]);
+  const [prevPrompt, setPreviousPrompts] = useState([]);
   const [showResult, setShowResult] = useState(false);
   const [loading, setLoading] = useState(false);
   const [resultData, setResultData] = useState("");
 
-  // Delayed display for typewriter effect
+  // Typewriter Effect (Simulated Delayed Display)
   const delayPara = (index, word) => {
     setTimeout(() => setResultData((prev) => prev + word + " "), 75 * index);
   };
 
-  // Handles API call and response formatting
-  const onSent = async () => {
+  // Reset State for New Chat
+  const newChat = () => {
+    setShowResult(false);
+    setLoading(false);
+  };
+
+  // API Call & Response Handling
+  const onSent = async (prompt) => {
     setResultData("");
     setLoading(true);
     setShowResult(true);
-    setRecentPrompt(input);
+
+    let usedPrompt = prompt || input; // Use provided prompt or input
+    setRecentPrompt(usedPrompt);
+    setPreviousPrompts((prev) => [...prev, usedPrompt]);
 
     try {
-      const response = await run(input);
+      const response = await run(usedPrompt);
       let formattedResponse = response
-        .split("**") // Bold formatting
+        .split("**") // Convert bold formatting
         .map((text, i) => (i % 2 ? `<b>${text}</b>` : text))
         .join("")
-        .split("*") // Line breaks
+        .split("*") // Convert line breaks
         .join("</br>")
-        .split(" "); // Split words
+        .split(" "); // Split into words
 
-      formattedResponse.forEach((word, i) => delayPara(i, word)); // Apply delay
+      formattedResponse.forEach((word, i) => delayPara(i, word));
     } catch (error) {
       setResultData("An error occurred. Please try again.");
       console.error("API Error:", error);
     } finally {
       setLoading(false);
-      setInput("");
+      setInput(""); // Clear input
     }
   };
 
@@ -48,7 +57,7 @@ const ContextProvider = (props) => {
     <Context.Provider
       value={{
         prevPrompt,
-        setPreviousPromps,
+        setPreviousPrompts,
         onSent,
         setRecentPrompt,
         recentPrompt,
@@ -57,6 +66,7 @@ const ContextProvider = (props) => {
         input,
         setInput,
         loading,
+        newChat,
       }}
     >
       {props.children}
